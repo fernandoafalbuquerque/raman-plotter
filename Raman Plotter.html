@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Raman Plotter – Horiba</title>
+<style>
+:root{--bg:#f6f6f4;--card:#fff;--tx:#1c1c1a;--mu:#6b6b66;--bd:#d9d9d4;--ac:#1f5fd6;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#171716;--card:#232321;--tx:#ecece8;--mu:#9a9a94;--bd:#3a3a36;--ac:#6ea0ff;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#171716;--card:#232321;--tx:#ecece8;--mu:#9a9a94;--bd:#3a3a36;--ac:#6ea0ff;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+h1{font-size:18px;margin:0 0 14px}.sub{color:var(--mu);margin:0 0 14px;font-size:13px}
+.wrap{max-width:1250px;margin:0 auto;padding:16px}
+.grid{display:grid;grid-template-columns:290px minmax(0,1fr);gap:14px}
+@media(max-width:820px){.grid{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:12px}
+.card h3{margin:0 0 8px;font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--mu)}
+.drop{display:block;border:2px dashed var(--bd);border-radius:10px;padding:18px 10px;text-align:center;cursor:pointer;color:var(--mu)}
+.drop.on{border-color:var(--ac);color:var(--ac)}.drop input{display:none}
+.row{display:flex;align-items:center;gap:8px;margin:6px 0}.row label{flex:1;color:var(--tx)}
+input[type=number],input[type=text],select{width:100%;background:var(--bg);color:var(--tx);border:1px solid var(--bd);border-radius:6px;padding:5px 7px;font:inherit}
+.row input[type=number]{width:86px}.row input[type=text]{flex:0 0 150px;width:150px}
+button{background:var(--ac);color:#fff;border:0;border-radius:6px;padding:7px 12px;font:inherit;cursor:pointer}
+button.sec{background:transparent;color:var(--tx);border:1px solid var(--bd)}
+.btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+.fig{background:#fff;border:1px solid var(--bd);border-radius:6px;overflow:hidden;color:#000}
+.fig svg{display:block;width:100%;height:auto}
+.hint{color:#666;padding:60px 20px;text-align:center;margin:0}
+.side{display:flex;flex-direction:column;gap:14px}
+.tw{overflow-x:auto;margin-top:12px}
+table{border-collapse:collapse;width:100%;font-size:13px}th,td{padding:4px 8px;border-bottom:1px solid var(--bd);text-align:left;white-space:nowrap}th{color:var(--mu);font-weight:500}
+.sl{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:5px 0 10px}.sl span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px}.sl input[type=color]{width:34px;height:26px;padding:0;border:1px solid var(--bd);border-radius:4px;background:none;cursor:pointer}.sl select{width:84px}.sl input[type=text]{width:100%;flex:1 0 100%}.sl button{padding:2px 8px}
+.ckw{display:flex;gap:14px;flex:1 0 100%}
+.ck{display:flex;align-items:center;gap:4px;font-size:13px}
+.small{font-size:12px;color:var(--mu);margin:6px 0 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>Raman Plotter</h1>
+
+<div class="grid">
+<div class="side">
+ <div class="card">
+  <label class="drop" id="drop"><input type="file" id="file" multiple accept=".txt,.csv,.dat"><b>Drag and drop .txt Raman file</b></label>
+  <div class="btns"><button class="sec" onclick="S.sp=[];S.sel=0;buildList();render()">Clear all</button></div>
+ </div>
+ <div class="card"><h3>Spectra</h3><div id="slist"></div></div>
+ <div class="card"><h3>Figure</h3>
+  <div class="row"><label>Mode</label><select id="mode" onchange="render()" style="width:150px"><option value="individual">Individual</option><option value="stacked">Stacked</option><option value="overlay">Overlay</option></select></div>
+  <div class="row" id="pickw"><label>Spectrum</label><select id="pick" onchange="S.sel=this.selectedIndex;render()" style="width:150px"></select></div>
+  <div class="row"><label>x min / max (cm⁻¹)</label><input type="number" id="xmin" placeholder="auto" oninput="render()" style="width:70px"><input type="number" id="xmax" value="2000" oninput="render()" style="width:70px"></div>
+  <div class="row"><label><input type="checkbox" id="norm" checked onchange="render()"> Normalize (0–1)</label></div>
+  <div class="row"><label><input type="checkbox" id="smooth" onchange="render()"> Smooth (moving avg.)</label><input type="number" id="sw" value="5" min="3" step="2" oninput="render()" style="width:60px"></div>
+  <div class="row"><label><input type="checkbox" id="yt" onchange="render()"> Show y axis</label></div>
+  <div class="row"><label><input type="checkbox" id="plain" onchange="render()"> Plain y numbers</label></div>
+  <div class="row"><label>Title</label><input type="text" id="ctitle" oninput="render()"></div>
+  <div class="row"><label>X axis title</label><input type="text" id="xtitle" value="Raman shift (cm^{-1})" oninput="render()"></div>
+  <div class="row"><label>Y axis title</label><input type="text" id="ytitle" value="Intensity (a.u.)" oninput="render()"></div>
+  <div class="row"><label><input type="checkbox" id="grid" onchange="render()"> Show grid</label></div>
+  <p class="small">Use ^{ } for superscript and _{ } for subscript in any text.</p>
+  <div class="row"><label><input type="checkbox" id="pinfo" checked onchange="render()"> Show acquisition parameters</label></div>
+  <div class="row"><label>Legend</label><select id="leg" onchange="render()" style="width:150px"><option value="trace">On each trace</option><option value="tr">Top right</option><option value="tl">Top left</option><option value="br">Bottom right</option><option value="bl">Bottom left</option><option value="none">None</option></select></div>
+  <div class="row"><button class="sec" onclick="resetLg()">Reset legend positions</button></div>
+  <p class="small">Drag a legend in the figure to move it. Untick “Legend” in the Spectra list to hide one.</p>
+  <div class="row"><label>Stack offset</label><input type="number" id="off" value="1.4" step="0.1" oninput="render()"></div>
+  <div class="row"><label>Width × height (px)</label><input type="number" id="w" value="900" oninput="render()" style="width:70px"><input type="number" id="h" value="560" oninput="render()" style="width:70px"></div>
+  <div class="row"><label>Font / line width (all)</label><input type="number" id="fs" value="15" oninput="render()" style="width:70px"><input type="number" id="lw" value="1.4" step="0.2" oninput="render()" style="width:70px"></div>
+ </div>
+ <div class="card"><h3>Peaks</h3>
+  <div class="row"><label><input type="checkbox" id="lab" checked onchange="render()"> Show labels</label></div>
+  <div class="row"><label><input type="checkbox" id="auto" checked onchange="render()"> Auto detection</label></div>
+  <div class="row"><label>Min. prominence</label><input type="number" id="prom" value="0.05" step="0.01" min="0" oninput="render()"></div>
+  <div class="row"><label>Min. distance (cm⁻¹)</label><input type="number" id="dist" value="15" oninput="render()"></div>
+  <div class="row"><label>Add</label><input type="text" id="addt" placeholder="877, 125" oninput="render()"></div>
+  <div class="row"><label>Remove</label><input type="text" id="remt" placeholder="1450" oninput="render()"></div>
+  <p class="small">Click the plot to add a peak; click a label to remove it.</p>
+ </div>
+</div>
+<div>
+ <div class="card">
+  <div class="fig" id="fig"></div>
+  <div class="btns"><button onclick="dl('png')">Download PNG (600 dpi)</button><button class="sec" onclick="dl('svg')">SVG</button><button class="sec" onclick="dl('csv')">Peaks CSV</button></div>
+  <div class="tw" id="tab"></div>
+ </div>
+</div>
+</div>
+</div>
+<script>
+const $=id=>document.getElementById(id);
+const S={sp:[],sel:0},LG={x:0,y:0};let DR=null,SUP=false;
+const COLS=['#1b9e1b','#1f3fff','#d62728','#9467bd','#ff7f0e','#17becf'];
+let DL=null;
+(async()=>{try{if(window.claude&&claude.use)DL=await claude.use('downloads')}catch(e){}})();
+const RE=/^(.+?)_(\d+(?:\.\d+)?) ?s_(\d+)_(\d+)nm_([A-Za-z]+)_(\d+) ?\(([^)]*)\)_x(\d+)_([A-Za-z]+)_(\d+)_(\d+(?:\.\d+)?)%/;
+const esc=t=>String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const rich=t=>esc(t).replace(/\^\{([^}]*)\}/g,(m,a)=>`<tspan dy="-0.4em" font-size="75%">${a.replace(/-/g,'−')}</tspan><tspan dy="0.4em" font-size="75%">&#8203;</tspan>`).replace(/_\{([^}]*)\}/g,(m,a)=>`<tspan dy="0.25em" font-size="75%">${a}</tspan><tspan dy="-0.25em" font-size="75%">&#8203;</tspan>`);
+const fmtY=v=>$('plain').checked?String(Number(v.toPrecision(2))):v.toPrecision(2);
+const num=(id,d)=>{const v=$(id).value;return v===''||isNaN(+v)?d:+v};
+const list=id=>$(id).value.split(/[,;\s]+/).map(parseFloat).filter(isFinite);
+
+function meta(f){
+  const st=f.replace(/\.[^.]+$/,''),m=RE.exec(st);
+  if(!m)return{sample:st,laser:0,short:st,info:''};
+  const s=m[1].replace(/\(([^)]*)\)/,(a,b)=>'('+b.replace(/_/g,',')+')').replace(/-?(\d+)C$/,' – $1 °C');
+  return{sample:s,laser:+m[4],short:m[4]+' nm',info:`${m[4]} nm · ${m[2]} s × ${m[3]} · ${m[6]} gr/mm|${m[5]}/${m[9]} · pinhole ${m[10]} · ${m[11]}%`};
+}
+function parse(t){
+  const x=[],y=[];
+  for(let l of t.split(/\r?\n/)){
+    l=l.trim();if(!l||l[0]==='#')continue;
+    l=l.replace(/,\s+/g,';');
+    const k=/[;\t ]/.test(l)?l.split(/[;\t ]+/):l.split(',');
+    const a=parseFloat(k[0].replace(',','.')),b=parseFloat((k[1]||'').replace(',','.'));
+    if(isFinite(a)&&isFinite(b)){x.push(a);y.push(b)}
+  }
+  const o=x.map((_,i)=>i).sort((i,j)=>x[i]-x[j]);
+  return{x:o.map(i=>x[i]),y:o.map(i=>y[i])};
+}
+async function load(files){
+  for(const f of files){
+    if(!/\.(txt|csv|dat)$/i.test(f.name))continue;
+    const d=parse(await f.text());
+    if(d.x.length<10)continue;
+    const ref=/^ref_/i.test(f.name);
+    const m=meta(f.name);
+    const s={color:ref?COLS[S.sp.filter(o=>o.ref).length%COLS.length]:'#000000',dash:'',name:ref?f.name.replace(/^ref_/i,'').replace(/\.[^.]+$/,'').replace(/_/g,' '):f.name.replace(/\.[^.]+$/,''),ref,meta:m,x:d.x,y:d.y,add:[],rem:[]};
+    S.sp=S.sp.filter(o=>o.name!==s.name||o.ref!==ref);S.sp.push(s);
+  }
+  buildList();render();
+}
+$('file').onchange=e=>load(e.target.files);
+const dz=$('drop');
+['dragover','dragenter'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.add('on')}));
+['dragleave','drop'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.remove('on')}));
+dz.addEventListener('drop',e=>load(e.dataTransfer.files));
+
+function buildList(){
+  const D=[['','Solid'],['8 4','Dashed'],['2 3','Dotted']];
+  $('slist').innerHTML=S.sp.length?S.sp.map((s,i)=>`<div class="sl"><input type="color" value="${s.color}" oninput="S.sp[${i}].color=this.value;render()"><select onchange="S.sp[${i}].dash=this.value;render()">${D.map(d=>`<option value="${d[0]}"${s.dash===d[0]?' selected':''}>${d[1]}</option>`).join('')}</select><input type="number" min="0.2" step="0.2" value="${s.lw||''}" placeholder="${num('lw',1.4)}" title="Line width (blank = global)" oninput="S.sp[${i}].lw=+this.value||0;render()" style="width:64px"><button class="sec" style="margin-left:auto" onclick="S.sp.splice(${i},1);buildList();render()">×</button><div class="ckw"><label class="ck"><input type="checkbox" ${s.hide?'':'checked'} onchange="S.sp[${i}].hide=!this.checked;render()"> Legend</label><label class="ck"><input type="checkbox" ${s.hideD?'':'checked'} onchange="S.sp[${i}].hideD=!this.checked;render()"> Description</label></div><input type="text" value="${esc(s.label||'').replace(/"/g,'&quot;')}" placeholder="${esc(s.ref?s.name:s.meta.sample).replace(/"/g,'&quot;')}" title="Legend label" oninput="S.sp[${i}].label=this.value;render()"><input type="text" value="${esc(s.info||'').replace(/"/g,'&quot;')}" placeholder="${esc(s.meta.info||'Parameters (| = new line)').replace(/"/g,'&quot;')}" title="Acquisition parameters shown under the label. Use | for a new line." oninput="S.sp[${i}].info=this.value;render()"></div>`).join(''):'<p class="small">No spectra loaded.</p>';
+}
+function proc(s){
+  const lo=num('xmin',-Infinity),hi=num('xmax',Infinity);
+  let X=[],Y=[];
+  for(let i=0;i<s.x.length;i++)if(s.x[i]>=lo&&s.x[i]<=hi){X.push(s.x[i]);Y.push(s.y[i])}
+  if($('smooth').checked){
+    const w=Math.max(3,(+$('sw').value|0)|1),h=w>>1;
+    Y=Y.map((_,i)=>{let a=0,n=0;for(let j=Math.max(0,i-h);j<=Math.min(Y.length-1,i+h);j++){a+=Y[j];n++}return a/n});
+  }
+  const mn=Y.reduce((a,b)=>Math.min(a,b),Infinity);
+  Y=Y.map(v=>v-mn);
+  if($('norm').checked){const mx=Y.reduce((a,b)=>Math.max(a,b),0)||1;Y=Y.map(v=>v/mx)}
+  return{X,Y};
+}
+function prom(Y,i){
+  let l=Y[i],r=Y[i];
+  for(let j=i-1;j>=0&&Y[j]<=Y[i];j--)l=Math.min(l,Y[j]);
+  for(let j=i+1;j<Y.length&&Y[j]<=Y[i];j++)r=Math.min(r,Y[j]);
+  return Y[i]-Math.max(l,r);
+}
+function fwhm(X,Y,i,p){
+  const lv=Y[i]-p/2;let a=i,b=i;
+  while(a>0&&Y[a]>lv)a--;while(b<Y.length-1&&Y[b]>lv)b++;
+  const xl=Y[a]===Y[a+1]?X[a]:X[a]+(lv-Y[a])*(X[a+1]-X[a])/(Y[a+1]-Y[a]);
+  const xr=Y[b]===Y[b-1]?X[b]:X[b-1]+(lv-Y[b-1])*(X[b]-X[b-1])/(Y[b]-Y[b-1]);
+  return Math.max(0,xr-xl);
+}
+function peaks(s){
+  const {X,Y}=s.p,mx=Y.reduce((a,b)=>Math.max(a,b),0),min=Y.reduce((a,b)=>Math.min(a,b),Infinity);
+  const gR=list('remt'),R=[...gR,...s.rem],tol=8;
+  let idx=[];
+  if($('auto').checked){
+    const c=[];
+    for(let i=1;i<Y.length-1;i++)if(Y[i]>Y[i-1]&&Y[i]>=Y[i+1]){const p=prom(Y,i);if(p>=num('prom',.05)*(mx-min))c.push([i,Y[i]])}
+    c.sort((a,b)=>b[1]-a[1]);
+    const d=num('dist',15);
+    for(const [i] of c)if(idx.every(k=>Math.abs(X[k]-X[i])>=d))idx.push(i);
+    idx=idx.filter(i=>!R.some(r=>Math.abs(X[i]-r)<=tol));
+  }
+  for(const pos of [...list('addt'),...s.add]){
+    let best=-1;
+    for(let i=0;i<X.length;i++)if(Math.abs(X[i]-pos)<=10&&(best<0||Y[i]>Y[best]))best=i;
+    if(best>=0&&!idx.includes(best))idx.push(best);
+  }
+  return idx.sort((a,b)=>a-b).map(i=>{const p=prom(Y,i);return{i,x:X[i],y:Y[i],w:fwhm(X,Y,i,p)}});
+}
+function ticks(lo,hi){
+  const r=hi-lo,st=[10,20,25,50,100,200,250,500,1000].find(s=>r/s<=8)||2000,M=[],m=[];
+  for(let v=Math.ceil(lo/st)*st;v<=hi+1e-9;v+=st)M.push(v);
+  for(let v=Math.ceil(lo/(st/2))*(st/2);v<=hi+1e-9;v+=st/2)if(!M.includes(v))m.push(v);
+  return{M,m};
+}
+let G={};
+function render(){
+  const W=num('w',900),H=num('h',560),fs=num('fs',15),lw=num('lw',1.4),mode=$('mode').value;
+  const samples=S.sp.filter(s=>!s.ref),refs=S.sp.filter(s=>s.ref);
+  $('pickw').style.display=mode!=='individual'?'none':'';
+  $('pick').innerHTML=samples.map(s=>`<option>${esc(s.name)}</option>`).join('');
+  S.sel=Math.min(S.sel,Math.max(0,samples.length-1));$('pick').selectedIndex=S.sel;
+  if(!samples.length){$('fig').innerHTML='<p class="hint">Drop one or more .txt files to see the spectrum.</p>';$('tab').innerHTML='';G={};return}
+  const use=mode!=='individual'?[...samples].sort((a,b)=>a.meta.laser-b.meta.laser):[samples[S.sel]];
+  const tr=[...use,...refs];tr.forEach(s=>s.p=proc(s));
+  const lo=num('xmin',Math.min(...tr.map(s=>s.p.X[0]))),hi=num('xmax',Math.max(...tr.map(s=>s.p.X[s.p.X.length-1])));
+  const unit=$('norm').checked?1:Math.max(...tr.map(s=>s.p.Y.reduce((a,b)=>Math.max(a,b),0)));
+  const off=tr.length>1&&mode!=='overlay'?num('off',1.4)*unit:0,labs=$('lab').checked;
+  const top=Math.max(...tr.map((s,i)=>i*off+s.p.Y.reduce((a,b)=>Math.max(a,b),0)));
+  const y0=-.03*unit,y1=top+(labs?.32:.08)*unit;
+  const ctt=$('ctitle').value.trim(),L=($('yt').checked?Math.max(78,44+Math.max(...[0,1,2,3,4].map(k=>fmtY(y0+(k/4)*(y1-y0)*.85).length))*fs*.58):62),Rm=22,T=ctt?fs+34:18,B=58;
+  const X=v=>L+(v-lo)/(hi-lo)*(W-L-Rm),Yp=v=>H-B-(v-y0)/(y1-y0)*(H-T-B);
+  G={W,H,L,Rm,T,B,lo,hi,y0,y1,unit,off,n:use.length,use,tr};
+  let leg=$('leg').value;if(mode==='overlay'&&leg==='trace')leg='tr';const inf=s=>$('pinfo').checked&&!s.hideD?((s.info!=null&&s.info!==''?s.info:s.meta.info)||'').split('|').map(x=>x.trim()).filter(Boolean):[];const lab=(s,r)=>s.label?s.label:(r?s.name:(mode!=='individual'?s.meta.sample+', '+s.meta.short:s.meta.sample));
+  let o=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" font-family="Arial, Helvetica, sans-serif" font-size="${fs}"><rect width="${W}" height="${H}" fill="#fff"/>`;
+  const tk=ticks(lo,hi);let ax='';
+  tk.M.forEach(v=>{const x=X(v);ax+=`<path d="M${x} ${H-B}v7M${x} ${T}v-0" stroke="#000"/><path d="M${x} ${H-B}v-7M${x} ${T}v7" stroke="#000"/><text x="${x}" y="${H-B+fs+10}" text-anchor="middle" fill="#000">${v}</text>`});
+  tk.m.forEach(v=>{const x=X(v);ax+=`<path d="M${x} ${H-B}v-4M${x} ${T}v4" stroke="#000"/>`});
+  if($('yt').checked){for(let k=0;k<=4;k++){const v=y0+(k/4)*(y1-y0)*.85,y=Yp(v);ax+=`<path d="M${L} ${y}h6M${W-Rm} ${y}h-6" stroke="#000"/><text x="${L-8}" y="${y+4}" text-anchor="end" fill="#000">${fmtY(v)}</text>`}}
+  let gr='';
+  if($('grid').checked){tk.M.forEach(v=>{const x=X(v);gr+=`<path d="M${x} ${T}V${H-B}" stroke="#d4d4d4" stroke-width=".7"/>`});for(let k=0;k<=4;k++){const y=Yp(y0+(k/4)*(y1-y0)*.85);gr+=`<path d="M${L} ${y}H${W-Rm}" stroke="#d4d4d4" stroke-width=".7"/>`}}
+  o+=gr+ax+`<rect x="${L}" y="${T}" width="${W-L-Rm}" height="${H-T-B}" fill="none" stroke="#000" stroke-width="1.2"/>`;
+  o+=`<text x="${(L+W-Rm)/2}" y="${H-10}" text-anchor="middle" font-size="${fs+3}" fill="#000">${rich($('xtitle').value)}</text>`;
+  o+=`<text transform="translate(18 ${(T+H-B)/2}) rotate(-90)" text-anchor="middle" font-size="${fs+3}" fill="#000">${rich($('ytitle').value)}</text>`;
+  if(ctt)o+=`<text x="${(L+W-Rm)/2}" y="${fs+14}" text-anchor="middle" font-size="${fs+4}" fill="#000">${rich(ctt)}</text>`;
+  o+=`<clipPath id="cp"><rect x="${L}" y="${T}" width="${W-L-Rm}" height="${H-T-B}"/></clipPath>`;
+  const rows=[];
+  tr.forEach((s,i)=>{
+    const isRef=i>=use.length,c=s.color,oy=i*off;
+    o+=`<polyline clip-path="url(#cp)" fill="none" stroke="${c}" stroke-width="${s.lw||lw}" stroke-dasharray="${s.dash||'none'}" stroke-linejoin="round" points="${s.p.X.map((x,k)=>X(x).toFixed(1)+','+Yp(s.p.Y[k]+oy).toFixed(1)).join(' ')}"/>`;
+    if(tr.length>1&&leg==='trace'&&(!s.hide||inf(s).length)){const yy=Yp(oy+.8*unit);o+=`<g class="lg" data-k="${i}" transform="translate(${s.lx||0} ${s.ly||0})" style="cursor:move"><text x="${L+10}" y="${yy}" fill="${c}" font-size="${fs-1}">${s.hide?'':rich(lab(s,isRef))}</text>`;inf(s).forEach((t,k)=>{o+=`<text x="${L+10}" y="${yy+(fs-2)*1.2*(k+(s.hide?0:1))}" font-size="${fs-3}" fill="#444">${rich(t)}</text>`});o+='</g>'}
+    if(!isRef){
+      s.pk=peaks(s);
+      s.pk.forEach(p=>{
+        rows.push([s.name,p.x,p.y,p.w]);
+        if(labs)o+=`<text class="pk" data-i="${i}" data-x="${p.x}" transform="translate(${X(p.x)+fs*.35} ${Yp(p.y+oy)-6}) rotate(-90)" font-size="${fs-2}" fill="#000" style="cursor:pointer">${p.x.toFixed(0)}</text>`;
+      });
+    }
+  });
+  if(/^[tb][lr]$/.test(leg)&&tr.some(s=>!s.hide||inf(s).length)){
+    const lh=fs+7,ih=fs-1,ents=tr.filter(s=>!s.hide||inf(s).length).map(s=>[s,s.hide?'':lab(s,s.ref),inf(s)]);
+    const wd=48+Math.max(...ents.map(e=>Math.max(e[1].length*(fs-1),...e[2].map(l=>l.length*(fs-3)))))*.55,ht=ents.reduce((a,e)=>a+lh+e[2].length*ih,8);
+    const x0=leg[1]==='l'?L+10:W-Rm-10-wd,yl=leg[0]==='t'?T+10:H-B-10-ht;
+    o+=`<g class="lg" data-k="g" transform="translate(${LG.x} ${LG.y})" style="cursor:move"><rect x="${x0}" y="${yl}" width="${wd}" height="${ht}" fill="#fff" fill-opacity=".9" stroke="#999" stroke-width=".8"/>`;
+    let cy=yl+4;ents.forEach(([s,t,I])=>{const yy=cy+lh/2;cy+=lh+I.length*ih;o+=I.map((l,k)=>`<text x="${x0+44}" y="${yy+(fs-1)*.35+ih*(k+1)}" font-size="${fs-3}" fill="#444">${rich(l)}</text>`).join('')+`<line x1="${x0+8}" x2="${x0+36}" y1="${yy}" y2="${yy}" stroke="${s.color}" stroke-width="${Math.max(s.lw||lw,1.6)}" stroke-dasharray="${s.dash||'none'}"/><text x="${x0+44}" y="${yy+(fs-1)*.35}" font-size="${fs-1}" fill="#000">${rich(t)}</text>`});o+='</g>';
+  }
+  if(tr.length===1&&leg==='trace'&&(!use[0].hide||inf(use[0]).length)){const m=use[0].meta;o+=`<g class="lg" data-k="g" transform="translate(${LG.x} ${LG.y})" style="cursor:move"><text x="${W-Rm-10}" y="${T+fs+6}" text-anchor="end" fill="#000">${use[0].hide?'':rich(lab(use[0],false))}</text>`+inf(use[0]).map((l,k)=>`<text x="${W-Rm-10}" y="${T+fs+6+(fs+1)*(k+(use[0].hide?0:1))}" text-anchor="end" font-size="${fs-3}" fill="#444">${rich(l)}</text>`).join('')+'</g>'}
+  o+='</svg>';
+  $('fig').innerHTML=o;G.rows=rows;
+  $('tab').innerHTML=rows.length?'<table><tr><th>Spectrum</th><th>Position (cm⁻¹)</th><th>Rel. int.</th><th>FWHM (cm⁻¹)</th></tr>'+rows.map(r=>`<tr><td>${esc(r[0])}</td><td>${r[1].toFixed(1)}</td><td>${r[2].toFixed(3)}</td><td>${r[3].toFixed(1)}</td></tr>`).join('')+'</table>':'';
+}
+$('fig').addEventListener('click',e=>{
+  if(!G.use||SUP||e.target.closest('.lg'))return;
+  const t=e.target.closest('.pk');
+  if(t){const s=G.use[+t.dataset.i],x=+t.dataset.x;s.add=s.add.filter(a=>Math.abs(a-x)>8);s.rem.push(x);render();return}
+  const svg=$('fig').querySelector('svg'),pt=svg.createSVGPoint();pt.x=e.clientX;pt.y=e.clientY;
+  const q=pt.matrixTransform(svg.getScreenCTM().inverse());
+  if(q.x<G.L||q.x>G.W-G.Rm||q.y<G.T||q.y>G.H-G.B)return;
+  const xv=G.lo+(q.x-G.L)/(G.W-G.L-G.Rm)*(G.hi-G.lo),yv=G.y0+(G.H-G.B-q.y)/(G.H-G.T-G.B)*(G.y1-G.y0);
+  let i=G.off?Math.min(G.n-1,Math.max(0,Math.floor((yv+.03*G.unit)/G.off))):0;
+  if(!G.off&&G.n>1){let bd=1e9;G.use.forEach((s,k)=>{let j=0;for(let m=0;m<s.p.X.length;m++)if(Math.abs(s.p.X[m]-xv)<Math.abs(s.p.X[j]-xv))j=m;const d=Math.abs(s.p.Y[j]-yv);if(d<bd){bd=d;i=k}})}
+  const s=G.use[i];s.rem=s.rem.filter(r=>Math.abs(r-xv)>8);s.add.push(xv);render();
+});
+function resetLg(){S.sp.forEach(s=>{s.lx=0;s.ly=0});LG.x=0;LG.y=0;render()}
+$('fig').addEventListener('pointerdown',e=>{
+  const g=e.target.closest('.lg');if(!g||!G.tr)return;
+  e.preventDefault();
+  const k=g.dataset.k,t=k==='g'?LG:G.tr[+k],kx=k==='g'?'x':'lx',ky=k==='g'?'y':'ly';
+  DR={t,kx,ky,ox:t[kx]||0,oy:t[ky]||0,sx:e.clientX,sy:e.clientY,m:false};
+});
+document.addEventListener('pointermove',e=>{
+  if(!DR)return;
+  const svg=$('fig').querySelector('svg');if(!svg)return;
+  const sc=G.W/svg.getBoundingClientRect().width,dx=(e.clientX-DR.sx)*sc,dy=(e.clientY-DR.sy)*sc;
+  if(Math.abs(dx)+Math.abs(dy)>3)DR.m=true;
+  if(DR.m){DR.t[DR.kx]=DR.ox+dx;DR.t[DR.ky]=DR.oy+dy;render()}
+});
+document.addEventListener('pointerup',()=>{if(DR&&DR.m){SUP=true;setTimeout(()=>{SUP=false},80)}DR=null});
+async function save(name,data){
+  if(DL){try{await DL.save({filename:name,data})}catch(e){}return}
+  const a=document.createElement('a');a.href=URL.createObjectURL(data instanceof Blob?data:new Blob([data]));a.download=name;a.click();
+}
+async function dl(kind){
+  if(!G.use)return;
+  const base='raman_'+(G.use.length>1?'stacked':G.use[0].name).replace(/[^\w\-.]+/g,'_').slice(0,70);
+  if(kind==='csv'){save(base+'_picos.csv','spectrum,position_cm-1,norm_intensity,FWHM_cm-1\n'+G.rows.map(r=>`"${r[0]}",${r[1].toFixed(1)},${r[2].toFixed(4)},${r[3].toFixed(1)}`).join('\n'));return}
+  const svg=$('fig').querySelector('svg').outerHTML;
+  if(kind==='svg'){save(base+'.svg',svg);return}
+  const img=new Image();
+  await new Promise(r=>{img.onload=r;img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg)});
+  const sc=600/96,c=document.createElement('canvas');c.width=G.W*sc;c.height=G.H*sc;
+  const g=c.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,c.width,c.height);g.drawImage(img,0,0,c.width,c.height);
+  c.toBlob(b=>save(base+'.png',b),'image/png');
+}
+buildList();render();
+</script>
+</body>
+</html>

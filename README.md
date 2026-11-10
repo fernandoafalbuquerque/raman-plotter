@@ -2,7 +2,7 @@
 
 A single-file web page for plotting Raman spectra exported by Horiba LabSpec (`.txt`) and producing publication-style figures: individual, stacked or overlaid spectra, automatic peak labels with a peak table, and export to PNG (600 dpi), SVG and CSV.
 
-There is nothing to install. Open `Raman_Plotter.html` in any modern browser (Chrome, Edge, Firefox, Safari). The page makes no network requests: your files are read locally and never uploaded anywhere.
+There is nothing to install. Open `index.html` in any modern browser (Chrome, Edge, Firefox, Safari). The page makes no network requests: your files are read locally and never uploaded anywhere.
 
 > **Status:** version 1.0 (initial release). Optional processing tools (Savitzky–Golay smoothing, polynomial baseline) are under development and are not part of this release. See [Roadmap](#roadmap).
 
@@ -10,7 +10,7 @@ There is nothing to install. Open `Raman_Plotter.html` in any modern browser (Ch
 
 ## Quick start
 
-1. Download `Raman_Plotter.html` and double-click it (or open it from your browser with *File → Open*).
+1. Download `index.html` and double-click it (or open it from your browser with *File → Open*).
 2. Drag one or more spectrum files onto the box **Drag and drop .txt Raman file** (or click the box to browse).
 3. Choose the **Mode** (Individual, Stacked or Overlay), adjust the x range and options.
 4. Click **Download PNG (600 dpi)**, **SVG** or **Peaks CSV**.
@@ -127,7 +127,7 @@ For stacked or overlaid figures, `<name>` is `stacked`.
 
 | File | Description |
 |---|---|
-| `Raman_Plotter.html` | The application (open it in a browser). |
+| `index.html` | The application (open it in a browser). |
 | `README.md` | This document. |
 | `LICENSE` | License terms. |
 
@@ -143,4 +143,4 @@ This software was developed with the assistance of [Claude](https://www.anthropi
 
 Fernando Albuquerque  
 Nuclear and Energy Research Institute (IPEN) / University of São Paulo  
-fernandoafalbuquerque\@gmail.com
+_e-mail here_

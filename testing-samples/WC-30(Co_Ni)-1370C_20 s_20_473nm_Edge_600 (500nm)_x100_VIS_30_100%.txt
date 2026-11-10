@@ -1,6 +1,6 @@
 #Acq. time (s)=	20
 #Accumulations=	20
-#Range (cm-¹)=	100...2000
+#Range (cm-Â¹)=	100...2000
 #Windows=	1
 #Auto scanning=	Off
 #Autofocus=	Off
@@ -15,7 +15,7 @@
 #Inst. Process=	Off
 #Detector Gain=	Best Dynamic
 #Detector ADC=	50 kHz HS
-#Detector temperature (°C)=	-60.09
+#Detector temperature (Â°C)=	-60.09
 #Instrument=	LabRAM HR Evol
 #Detector=	SIN-EM FIVIS
 #Objective=	x100_VIS
@@ -29,10 +29,10 @@
 #E-Cal_Neon=	0
 #StageXY=	75x50mm Scan+
 #StageZ=	Z motor
-#X (µm)=	0
-#Y (µm)=	0
-#Z (µm)=	-1372.2
-#Spectral res.(cm-¹)=	2.5
+#X (Âµm)=	0
+#Y (Âµm)=	0
+#Z (Âµm)=	-1372.2
+#Spectral res.(cm-Â¹)=	2.5
 #Full time(mm:ss)=	6:51
 #AC=	Not calibrated
 #Project=	

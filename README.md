@@ -1,19 +1,24 @@
 # Raman Plotter
 
+**Use it online: <https://fernandoafalbuquerque.github.io/raman-plotter/>**
+
 A single-file web page for plotting Raman spectra exported by Horiba LabSpec (`.txt`) and producing publication-style figures: individual, stacked or overlaid spectra, automatic peak labels with a peak table, and export to PNG (600 dpi), SVG and CSV.
 
 There is nothing to install. Open `index.html` in any modern browser (Chrome, Edge, Firefox, Safari). The page makes no network requests: your files are read locally and never uploaded anywhere.
 
-> **Status:** version 1.0 (initial release). Optional processing tools (Savitzky–Golay smoothing, polynomial baseline) are under development and are not part of this release. See [Roadmap](#roadmap).
+> **Status:** version 1.0.1. Optional processing tools (Savitzky–Golay smoothing, polynomial baseline) are under development and are not part of this release. See [Roadmap](#roadmap) and [Changelog](#changelog).
 
 ---
 
 ## Quick start
 
-1. Download `index.html` and double-click it (or open it from your browser with *File → Open*).
+1. Open the [online version](https://fernandoafalbuquerque.github.io/raman-plotter/), or download `index.html` and double-click it (or open it from your browser with *File → Open*).
 2. Drag one or more spectrum files onto the box **Drag and drop .txt Raman file** (or click the box to browse).
 3. Choose the **Mode** (Individual, Stacked or Overlay), adjust the x range and options.
 4. Click **Download PNG (600 dpi)**, **SVG** or **Peaks CSV**.
+5. To continue later, click **Save project** (see [Saving and reopening your work](#saving-and-reopening-your-work)).
+
+Need a file to try it? The [`testing-samples`](testing-samples) folder has a spectrum with a LabSpec-style name.
 
 ## Input files
 
@@ -103,6 +108,25 @@ For stacked or overlaid figures, `<name>` is `stacked`.
 
 ---
 
+## Saving and reopening your work
+
+The page keeps everything in memory, so closing the tab loses the session. To avoid that, save a **project file**:
+
+| Button | What it does |
+|---|---|
+| **Save project** | Downloads `raman_project_YYYY-MM-DD_HHMM.json`. It contains the raw data of every loaded spectrum and all settings, so you do not need to keep the original `.txt` files together with it. |
+| **Open project** | Loads a project file. You can also drag the `.json` onto the upload box. If spectra are already loaded, the page asks before replacing the session. |
+| **Clear all** | Removes all spectra from the session (settings stay as they are). |
+
+What is stored: raw spectra; per-spectrum color, line type, line width, label, parameters and Legend/Description switches; dragged legend positions; peaks you added or removed by hand; and every setting in the Figure and Peaks cards (mode, x range, normalization, smoothing, titles, size, fonts, etc.).
+
+Notes:
+
+- A project file is plain JSON. Typical size is about 15 bytes per data point, so 20 spectra of 2000 points are around 600 KB.
+- It includes your raw data. Do not publish project files if the data are unpublished.
+- If something is loaded and you have not saved since your last change, the browser asks for confirmation before closing the tab.
+- The page does not save automatically. Save a project before closing, and again after important changes.
+
 ## Tips
 
 - For a clean comparison figure: Stacked mode, Normalize on, Show y axis off, Legend *On each trace*, and drag the labels where they fit.
@@ -113,8 +137,14 @@ For stacked or overlaid figures, `<name>` is `stacked`.
 ## Known limitations
 
 - Only the Smooth (moving average) option is available in this version; there is no baseline correction yet.
+- Project files saved by this version are meant to be opened by this version or later.
 - The page was written to be self-contained, so it works from a local file with no internet connection.
 - Peak detection is intended for exploration. Check labeled positions against your data before reporting them.
+
+## Changelog
+
+- **v1.0.1:** Save project / Open project / Clear all; confirmation before closing the tab with unsaved work; testing sample added.
+- **v1.0.0:** initial release.
 
 ## Roadmap
 
@@ -128,6 +158,7 @@ For stacked or overlaid figures, `<name>` is `stacked`.
 | File | Description |
 |---|---|
 | `index.html` | The application (open it in a browser). |
+| `testing-samples/` | Example spectrum file(s) to try the plotter. |
 | `README.md` | This document. |
 | `LICENSE` | License terms. |
 

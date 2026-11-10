@@ -44,8 +44,9 @@ table{border-collapse:collapse;width:100%;font-size:13px}th,td{padding:4px 8px;b
 <div class="grid">
 <div class="side">
  <div class="card">
-  <label class="drop" id="drop"><input type="file" id="file" multiple accept=".txt,.csv,.dat"><b>Drag and drop .txt Raman file</b></label>
-  <div class="btns"><button class="sec" onclick="S.sp=[];S.sel=0;buildList();render()">Clear all</button></div>
+  <label class="drop" id="drop"><input type="file" id="file" multiple accept=".txt,.csv,.dat,.json"><b>Drag and drop .txt Raman file</b></label>
+  <div class="btns"><button onclick="saveProject()">Save project</button><button class="sec" onclick="$('pfile').click()">Open project</button><button class="sec" onclick="S.sp=[];S.sel=0;buildList();render()">Clear all</button></div>
+  <input type="file" id="pfile" accept=".json" style="display:none" onchange="load(this.files);this.value=''">
  </div>
  <div class="card"><h3>Spectra</h3><div id="slist"></div></div>
  <div class="card"><h3>Figure</h3>
@@ -54,6 +55,7 @@ table{border-collapse:collapse;width:100%;font-size:13px}th,td{padding:4px 8px;b
   <div class="row"><label>x min / max (cm⁻¹)</label><input type="number" id="xmin" placeholder="auto" oninput="render()" style="width:70px"><input type="number" id="xmax" value="2000" oninput="render()" style="width:70px"></div>
   <div class="row"><label><input type="checkbox" id="norm" checked onchange="render()"> Normalize (0–1)</label></div>
   <div class="row"><label><input type="checkbox" id="smooth" onchange="render()"> Smooth (moving avg.)</label><input type="number" id="sw" value="5" min="3" step="2" oninput="render()" style="width:60px"></div>
+  
   <div class="row"><label><input type="checkbox" id="yt" onchange="render()"> Show y axis</label></div>
   <div class="row"><label><input type="checkbox" id="plain" onchange="render()"> Plain y numbers</label></div>
   <div class="row"><label>Title</label><input type="text" id="ctitle" oninput="render()"></div>
@@ -90,7 +92,7 @@ table{border-collapse:collapse;width:100%;font-size:13px}th,td{padding:4px 8px;b
 </div>
 <script>
 const $=id=>document.getElementById(id);
-const S={sp:[],sel:0},LG={x:0,y:0};let DR=null,SUP=false;
+const S={sp:[],sel:0},LG={x:0,y:0};let DR=null,SUP=false,DIRTY=false;
 const COLS=['#1b9e1b','#1f3fff','#d62728','#9467bd','#ff7f0e','#17becf'];
 let DL=null;
 (async()=>{try{if(window.claude&&claude.use)DL=await claude.use('downloads')}catch(e){}})();
@@ -121,6 +123,7 @@ function parse(t){
 }
 async function load(files){
   for(const f of files){
+    if(/\.json$/i.test(f.name)){try{const o=JSON.parse(await f.text());if(!S.sp.length||confirm('Replace the current session with this project?'))restore(o)}catch(e){alert('Could not open project: '+e.message)}continue}
     if(!/\.(txt|csv|dat)$/i.test(f.name))continue;
     const d=parse(await f.text());
     if(d.x.length<10)continue;
@@ -141,6 +144,27 @@ function buildList(){
   const D=[['','Solid'],['8 4','Dashed'],['2 3','Dotted']];
   $('slist').innerHTML=S.sp.length?S.sp.map((s,i)=>`<div class="sl"><input type="color" value="${s.color}" oninput="S.sp[${i}].color=this.value;render()"><select onchange="S.sp[${i}].dash=this.value;render()">${D.map(d=>`<option value="${d[0]}"${s.dash===d[0]?' selected':''}>${d[1]}</option>`).join('')}</select><input type="number" min="0.2" step="0.2" value="${s.lw||''}" placeholder="${num('lw',1.4)}" title="Line width (blank = global)" oninput="S.sp[${i}].lw=+this.value||0;render()" style="width:64px"><button class="sec" style="margin-left:auto" onclick="S.sp.splice(${i},1);buildList();render()">×</button><div class="ckw"><label class="ck"><input type="checkbox" ${s.hide?'':'checked'} onchange="S.sp[${i}].hide=!this.checked;render()"> Legend</label><label class="ck"><input type="checkbox" ${s.hideD?'':'checked'} onchange="S.sp[${i}].hideD=!this.checked;render()"> Description</label></div><input type="text" value="${esc(s.label||'').replace(/"/g,'&quot;')}" placeholder="${esc(s.ref?s.name:s.meta.sample).replace(/"/g,'&quot;')}" title="Legend label" oninput="S.sp[${i}].label=this.value;render()"><input type="text" value="${esc(s.info||'').replace(/"/g,'&quot;')}" placeholder="${esc(s.meta.info||'Parameters (| = new line)').replace(/"/g,'&quot;')}" title="Acquisition parameters shown under the label. Use | for a new line." oninput="S.sp[${i}].info=this.value;render()"></div>`).join(''):'<p class="small">No spectra loaded.</p>';
 }
+function projectData(){
+  const settings={};
+  document.querySelectorAll('input[id],select[id]').forEach(el=>{if(['file','pfile','pick'].includes(el.id))return;settings[el.id]=el.type==='checkbox'?el.checked:el.value});
+  return{app:'raman-plotter',version:1,saved:new Date().toISOString(),settings,sel:S.sel,LG,
+    spectra:S.sp.map(s=>({name:s.name,ref:s.ref,meta:s.meta,x:s.x,y:s.y,color:s.color,dash:s.dash,lw:s.lw||0,label:s.label||'',info:s.info||'',hide:!!s.hide,hideD:!!s.hideD,lx:s.lx||0,ly:s.ly||0,add:s.add||[],rem:s.rem||[]}))};
+}
+async function saveProject(){
+  if(!S.sp.length){alert('Nothing to save yet.');return}
+  const d=new Date(),p=n=>String(n).padStart(2,'0');
+  await save(`raman_project_${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}_${p(d.getHours())}${p(d.getMinutes())}.json`,JSON.stringify(projectData()));
+  DIRTY=false;
+}
+function restore(o){
+  if(!o||o.app!=='raman-plotter'||!Array.isArray(o.spectra))throw new Error('this is not a Raman Plotter project file');
+  S.sp=o.spectra.map(s=>({...s,add:s.add||[],rem:s.rem||[]}));
+  S.sel=o.sel||0;
+  LG.x=(o.LG&&o.LG.x)||0;LG.y=(o.LG&&o.LG.y)||0;
+  for(const [id,v] of Object.entries(o.settings||{})){const el=$(id);if(!el)continue;if(el.type==='checkbox')el.checked=!!v;else el.value=v}
+  buildList();render();DIRTY=false;
+}
+window.addEventListener('beforeunload',e=>{if(DIRTY){e.preventDefault();e.returnValue=''}});
 function proc(s){
   const lo=num('xmin',-Infinity),hi=num('xmax',Infinity);
   let X=[],Y=[];
@@ -194,6 +218,7 @@ function ticks(lo,hi){
 }
 let G={};
 function render(){
+  DIRTY=S.sp.length>0;
   const W=num('w',900),H=num('h',560),fs=num('fs',15),lw=num('lw',1.4),mode=$('mode').value;
   const samples=S.sp.filter(s=>!s.ref),refs=S.sp.filter(s=>s.ref);
   $('pickw').style.display=mode!=='individual'?'none':'';

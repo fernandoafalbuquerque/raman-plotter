@@ -174,4 +174,4 @@ This software was developed with the assistance of [Claude](https://www.anthropi
 
 Fernando Albuquerque  
 Nuclear and Energy Research Institute (IPEN) / University of São Paulo  
-_e-mail here_
+fernandoafalbuquerque@gmail.com

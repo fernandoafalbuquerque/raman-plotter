@@ -6,7 +6,7 @@ A single-file web page for plotting Raman spectra exported by Horiba LabSpec (`.
 
 There is nothing to install. Open `index.html` in any modern browser (Chrome, Edge, Firefox, Safari). The page makes no network requests: your files are read locally and never uploaded anywhere.
 
-> **Status:** version 1.0.1. Optional processing tools (Savitzky–Golay smoothing, polynomial baseline) are under development and are not part of this release. See [Roadmap](#roadmap) and [Changelog](#changelog).
+> **Status:** version 1.0.2. Optional processing tools (Savitzky–Golay smoothing, polynomial baseline) are under development and are not part of this release. See [Roadmap](#roadmap) and [Changelog](#changelog).
 
 ---
 
@@ -14,7 +14,7 @@ There is nothing to install. Open `index.html` in any modern browser (Chrome, Ed
 
 1. Open the [online version](https://fernandoafalbuquerque.github.io/raman-plotter/), or download `index.html` and double-click it (or open it from your browser with *File → Open*).
 2. Drag one or more spectrum files onto the box **Drag and drop .txt Raman file** (or click the box to browse).
-3. Choose the **Mode** (Individual, Stacked or Overlay), adjust the x range and options.
+3. Choose the **Mode** (Individual, Stacked or Overlay), adjust the x and y ranges and options.
 4. Click **Download PNG (600 dpi)**, **SVG** or **Peaks CSV**.
 5. To continue later, click **Save project** (see [Saving and reopening your work](#saving-and-reopening-your-work)).
 
@@ -37,7 +37,7 @@ If the file name follows the LabSpec pattern below, the page reads the acquisiti
 
 Example: `NbC_Li_10s_3_532nm_Edge_600 (500)_x50_LWD_100_10%.txt`
 
-The parameters appear under the legend label (for example `532 nm · 10 s × 3 · 600 gr/mm|Edge/LWD · pinhole 100 · 10%`). If the name does not match, the spectrum still loads; the sample name is simply the file name, and you can type any label or parameter text yourself (see below). In Stacked and Overlay modes, samples are ordered by laser wavelength read from the file name.
+The parameters appear under the legend label (for example `532 nm · 10 s × 3 · 600 gr/mm|Edge/LWD · pinhole 100 · 10%`). If the name does not match, the spectrum still loads; the sample name is simply the file name, and you can type any label or parameter text yourself (see below). When files are loaded, samples are placed in order of the laser wavelength read from the file name (shortest at the bottom of a stack); you can change the order afterwards (see [Spectra](#spectra-one-block-per-loaded-spectrum)).
 
 ### Reference spectra
 
@@ -49,8 +49,12 @@ Files whose names start with `ref_` (for example `ref_NbC_literature.txt`) are t
 
 ### Spectra (one block per loaded spectrum)
 
+Each block starts with the **full file name**, so spectra with similar names can be told apart. The list order matches the figure: **the top of the list is the top of the stack**. References are listed above the samples because they are drawn after them.
+
 | Control | What it does |
 |---|---|
+| File name | Click it to **highlight** that spectrum in the figure (see [Identifying a spectrum](#identifying-a-spectrum)). |
+| ▲ ▼ | Move the spectrum up or down in the stack. Samples and references are ordered separately. In Overlay mode the order sets which curve is drawn on top and the order of the legend. |
 | Color | Line color. Samples start black; references get colors from a palette. |
 | Line type | Solid, dashed or dotted. |
 | Line width (number box) | Width for this spectrum only. Empty = use the global width (shown in gray as a hint). |
@@ -58,6 +62,9 @@ Files whose names start with `ref_` (for example `ref_NbC_literature.txt`) are t
 | Legend / Description | Show or hide the legend label / the acquisition parameters of this spectrum. |
 | Label field | Custom legend text (empty = automatic). |
 | Parameters field | Custom text for the parameters under the label. Use `|` to start a new line. |
+| **Sort by laser** (button below the list) | Puts the samples back in order of laser wavelength. |
+
+Until you move a spectrum with ▲ ▼, samples are kept sorted by laser when you load more files. After that, your order is kept (and saved in the project) until you press **Sort by laser**.
 
 ### Figure
 
@@ -65,6 +72,7 @@ Files whose names start with `ref_` (for example `ref_NbC_literature.txt`) are t
 |---|---|
 | Mode | **Individual**: one sample at a time (pick it in *Spectrum*). **Stacked**: all samples one above the other. **Overlay**: all samples on the same axes. |
 | x min / max (cm⁻¹) | Plot range. `x min` empty = automatic. Processing and normalization use only this range. |
+| y min / max | Vertical range of the plot, in the units of the plotted values. Empty = automatic. In normalized stacked plots each spectrum is 1 unit tall and the spacing is *Stack offset*, so `y max` can be used to trim empty space above the top spectrum. With a custom range, the y axis and grid use round tick values. If `y max` is not larger than `y min`, the automatic range is used. |
 | Normalize (0–1) | Subtracts each spectrum's minimum and divides by its maximum, inside the x range. When off, the minimum is still subtracted and the y axis shows intensity in the original units. |
 | Smooth (moving avg.) | Moving-average smoothing; the number box is the window in points (odd, ≥ 3). Off by default, so data are plotted as exported. |
 | Show y axis | Draws y-axis ticks and numbers. Hidden by default (usual for normalized spectra). |
@@ -82,19 +90,31 @@ Files whose names start with `ref_` (for example `ref_NbC_literature.txt`) are t
 
 | Control | What it does |
 |---|---|
+| Click on plot | What a click on the figure does: **Identify spectrum** (default) or **Add peak**. |
 | Show labels | Writes the position of each peak above it. |
 | Auto detection | Finds local maxima automatically. |
 | Min. prominence | Smallest accepted peak, as a fraction of the spectrum's intensity range (0.05 = 5 %). Increase to get fewer peaks. |
 | Min. distance (cm⁻¹) | Peaks closer than this are merged; the taller one is kept. |
 | Add | Positions to force, separated by commas, e.g. `877, 125`. The nearest maximum within ±10 cm⁻¹ is used. |
 | Remove | Positions to delete, e.g. `1450` (tolerance ±8 cm⁻¹). |
-| Click on the plot | Adds a peak at that position (on the spectrum under the click). |
-| Click on a label | Removes that peak. |
+
+In **Add peak** mode, clicking the plot adds a peak at that position on the nearest spectrum, and clicking a peak label removes that peak. In **Identify spectrum** mode these clicks never change your peaks, so a label cannot be removed by accident.
 
 Below the figure, a table lists **position**, **relative intensity** and **FWHM** for every peak. Notes:
 
 - FWHM is measured on the plotted curve (after smoothing, if enabled) at half of the peak's prominence, using linear interpolation. It is not a fitted line width.
 - The intensity column is relative only when Normalize is on.
+
+### Identifying a spectrum
+
+When many spectra have similar names, highlight one to see which curve it is:
+
+- **From the figure:** with *Click on plot* set to *Identify spectrum*, click on a curve (within about 10 px), on its legend text, or on one of its peak labels.
+- **From the list:** click the file name of a spectrum.
+
+The chosen spectrum is drawn thicker and on top, the others fade, its block in the list is outlined, and a bar above the figure shows its full file name. Use **Clear** in that bar, or click an empty part of the plot, to remove the highlight. The highlight is for viewing only: it is **not** included in the PNG, SVG or saved projects.
+
+On wide screens the figure stays in view while you scroll the list, so you can reorder or edit a long list while watching the result.
 
 ### Export
 
@@ -118,7 +138,7 @@ The page keeps everything in memory, so closing the tab loses the session. To av
 | **Open project** | Loads a project file. You can also drag the `.json` onto the upload box. If spectra are already loaded, the page asks before replacing the session. |
 | **Clear all** | Removes all spectra from the session (settings stay as they are). |
 
-What is stored: raw spectra; per-spectrum color, line type, line width, label, parameters and Legend/Description switches; dragged legend positions; peaks you added or removed by hand; and every setting in the Figure and Peaks cards (mode, x range, normalization, smoothing, titles, size, fonts, etc.).
+What is stored: raw spectra; per-spectrum color, line type, line width, label, parameters and Legend/Description switches; dragged legend positions; peaks you added or removed by hand; and the order of the stack; and every setting in the Figure and Peaks cards (mode, x and y ranges, normalization, smoothing, titles, size, fonts, etc.).
 
 Notes:
 
@@ -130,6 +150,8 @@ Notes:
 ## Tips
 
 - For a clean comparison figure: Stacked mode, Normalize on, Show y axis off, Legend *On each trace*, and drag the labels where they fit.
+- To group similar lasers in a stack, use ▲ ▼ in the Spectra list; **Sort by laser** starts over.
+- To tell similar curves apart, click one in the figure or click its name in the list.
 - To highlight your own measurement over references in Overlay mode, give it a larger individual line width.
 - If your data were already smoothed or baseline-corrected elsewhere (for example in MATLAB), leave Smooth off.
 - Tick labels on the x axis use fixed steps (10, 20, 25, 50, 100 … cm⁻¹) chosen from the range; narrowing x min / max refines them.
@@ -143,6 +165,7 @@ Notes:
 
 ## Changelog
 
+- **v1.0.2:** y min / max range; reorder spectra with ▲ ▼ and **Sort by laser**; identify a curve by clicking it or its name (new *Click on plot* option); full file names in the Spectra list; the figure stays in view on wide screens; stack order saved in projects.
 - **v1.0.1:** Save project / Open project / Clear all; confirmation before closing the tab with unsaved work; testing sample added.
 - **v1.0.0:** initial release.
 
